@@ -1,10 +1,14 @@
 import pygame
+import json
+
 import speech_recognition as sr
 
 pygame.mixer.init()
 
-callsign = input("CALLSIGN: ")
-runway = input("RUNWAY: ")
+callsign = ""
+runway = "fff"
+with open('assets/structures.json') as f:
+    structures = json.load(f)
 sequence = [
     {
         "structure": ["[callsign]", "e", "[runway]"],
@@ -158,7 +162,8 @@ sentence_structure = {
         "air traffic controller this is",
         "towah this is",
         "tower this is",
-        "towel this is"],
+        "towel this is"
+    ],
     "[callsign]": [
         "[callsign]"
     ],
@@ -181,7 +186,7 @@ sentence_structure = {
         "to land on",
         "to land on",
         "too land on",
-        "too land on",
+        "too land on"
     ],
     "runway": [
         "runway",
@@ -202,91 +207,32 @@ sentence_structure = {
 
 
 def tokenise_text(text):
-    tokens = {}
-    tmp = text
-
-    prev_keys = []
-    for key, phrase_list in sentence_structure.items():
-        phrase_list = sentence_structure[key]
-        result = contains_phrase(text, phrase_list)
-        #print("Result: " + str(result))
-        if result:
-            tmp_2 = tmp.split(result)
-            #print(tmp_2)
-            if tmp_2[0] != '':
-                tokens[prev_keys[-1]] = tmp_2[0].strip()
-            tokens[key] = result
-            #print("Tokens: " + str(tokens))
-            tmp = tmp_2[1].strip()
-            #print("tmp: " + tmp)
-        else:
-            if len(prev_keys) == len(sentence_structure.keys()) - 1:
-                tokens[key] = tmp.strip()
-        prev_keys.append(key)
-    #print("Tokens: " + str(tokens))
-    for key in sentence_structure.keys():
+    for struct in structures:
+        tokens = {}
+        tmp = text
+        prev_keys = []
+        current_node = None
+        for i in range(len(struct['nodes'])):
+            current_node = [node for node in struct['nodes'] if node['id'] == i][0]
+            print("current node: " + str(current_node))
+            result = contains_phrase(text, current_node['possibilities'])
+            print("Result: " + str(result))
+            if result:
+                tmp_2 = tmp.split(result)
+                print(tmp_2)
+                if tmp_2[0] != '':
+                    tokens[prev_keys[-1]] = tmp_2[0].strip()
+                tokens[current_node['name']] = result
+                print("Tokens: " + str(tokens))
+                tmp = tmp_2[1].strip()
+                print("tmp: " + tmp)
+            prev_keys.append(current_node['name'])
+        tokens[current_node['name']] = tmp.strip()
+    print("Tokens: " + str(tokens))
+    for key in [node['name'] for node in struct['nodes']]:
         if key not in tokens.keys():
             return False
-    return (convert_to_natophonetic(tokens["[callsign]"]), convert_to_natophonetic(tokens["[runway]"]))
-
-    '''phrases = [
-        "aicraft traffic control this is",
-        "aircraft traffic controller this is",
-        "air traffic control this is",
-        "air traffic controller this is",
-        "towah this is",
-        "tower this is",
-        "towel this is"]
-    tower = starts_with_phrase(text, phrases)
-    if tower:
-        temp = [item.strip() for item in text.split(tower)]
-        phrases = ["requesting permission",
-                   "request permission",
-                   "requested permission"]
-        permission = contains_phrase(temp[1], phrases)
-        if permission:
-            temp_2 = temp[1].split(permission)
-            raw_callsign = temp_2[0].strip()
-            callsign = convert_to_natophonetic(raw_callsign)
-            print("Extracted callsign: " + callsign)
-            phrases = [
-                "to take of from",
-                "to take of from",
-                "to take off from",
-                "to take off from",
-                "too take of from",
-                "too take of from",
-                "too take off from",
-                "too take off from",
-                "to land on",
-                "to land on",
-                "too land on",
-                "too land on"
-            ]
-            temp_3 = starts_with_phrase(temp_2[1].strip(), phrases)
-            if temp_3:
-                temp_4 = temp_2[1].strip().split(temp_3)[1].strip()
-                phrases = [
-                    "runway",
-                    "runaway",
-                    "run way",
-                    "one way",
-                    "one-way",
-                    "the runway",
-                    "the runaway",
-                    "the run way",
-                    "the one way",
-                    "the one-way"
-                ]
-                temp_5 = starts_with_phrase(temp_4, phrases)
-                if temp_5:
-                    raw_runway = temp_4.split(temp_5)[1].strip()
-                    print(raw_runway)
-                    runway = convert_to_natophonetic(raw_runway)
-                    print("Extracted runway: " + runway)
-                    return (callsign, runway)
-    else:
-        return False'''
+    return convert_to_natophonetic(tokens["[callsign]"]), convert_to_natophonetic(tokens["[runway]"])
 
 
 r = sr.Recognizer()
