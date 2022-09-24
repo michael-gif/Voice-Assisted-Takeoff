@@ -211,10 +211,7 @@ def tokenise_text(text):
         tokens = {}
         tmp = text
         prev_keys = []
-        current_node = [node for node in struct['nodes'] if node['id'] == 0][0]
-        result = starts_with_phrase(text, current_node['possibilities'])
-        if not result:
-            continue
+        current_node = None
         for i in range(len(struct['nodes'])):
             current_node = [node for node in struct['nodes'] if node['id'] == i][0]
             #print("current node: " + str(current_node))
@@ -231,10 +228,13 @@ def tokenise_text(text):
                 #print("tmp: " + tmp)
             prev_keys.append(current_node['name'])
         tokens[current_node['name']] = tmp.strip()
-    #print("Tokens: " + str(tokens))
-    for key in [node['name'] for node in struct['nodes']]:
-        if key not in tokens.keys():
-            return False
+        #print("Tokens: " + str(tokens))
+        valid_match = True
+        for key in [node['name'] for node in struct['nodes']]:
+            if key not in tokens.keys():
+                valid_match = False
+        if valid_match:
+            break
     return convert_to_natophonetic(tokens["[callsign]"]), convert_to_natophonetic(tokens["[runway]"])
 
 
