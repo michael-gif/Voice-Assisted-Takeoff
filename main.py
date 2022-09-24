@@ -211,24 +211,27 @@ def tokenise_text(text):
         tokens = {}
         tmp = text
         prev_keys = []
-        current_node = None
+        current_node = [node for node in struct['nodes'] if node['id'] == 0][0]
+        result = starts_with_phrase(text, current_node['possibilities'])
+        if not result:
+            continue
         for i in range(len(struct['nodes'])):
             current_node = [node for node in struct['nodes'] if node['id'] == i][0]
-            print("current node: " + str(current_node))
+            #print("current node: " + str(current_node))
             result = contains_phrase(text, current_node['possibilities'])
-            print("Result: " + str(result))
+            #print("Result: " + str(result))
             if result:
                 tmp_2 = tmp.split(result)
-                print(tmp_2)
+                #print(tmp_2)
                 if tmp_2[0] != '':
                     tokens[prev_keys[-1]] = tmp_2[0].strip()
                 tokens[current_node['name']] = result
-                print("Tokens: " + str(tokens))
+                #print("Tokens: " + str(tokens))
                 tmp = tmp_2[1].strip()
-                print("tmp: " + tmp)
+                #print("tmp: " + tmp)
             prev_keys.append(current_node['name'])
         tokens[current_node['name']] = tmp.strip()
-    print("Tokens: " + str(tokens))
+    #print("Tokens: " + str(tokens))
     for key in [node['name'] for node in struct['nodes']]:
         if key not in tokens.keys():
             return False
