@@ -1,7 +1,11 @@
 import pygame
 import json
+import os
+import shutil
 
 import speech_recognition as sr
+
+from datetime import datetime
 
 pygame.mixer.init()
 
@@ -94,6 +98,10 @@ def play_file(file):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pass
+    session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+    path = os.path.dirname(os.path.abspath(__file__))
+    dest = f'{path}/assets/sessions/{session_name}/{session_size}_{os.path.basename(file)}'
+    shutil.copyfile(file, dest)
 
 
 def play_phrase(phrase):
@@ -214,21 +222,21 @@ def tokenise_text(text):
         current_node = None
         for i in range(len(struct['nodes'])):
             current_node = [node for node in struct['nodes'] if node['id'] == i][0]
-            #print("current node: " + str(current_node))
+            # print("current node: " + str(current_node))
             result = contains_phrase(text, current_node['possibilities'])
-            #print("Result: " + str(result))
+            # print("Result: " + str(result))
             if result:
                 tmp_2 = tmp.split(result)
-                #print(tmp_2)
+                # print(tmp_2)
                 if tmp_2[0] != '':
                     tokens[prev_keys[-1]] = tmp_2[0].strip()
                 tokens[current_node['name']] = result
-                #print("Tokens: " + str(tokens))
+                # print("Tokens: " + str(tokens))
                 tmp = tmp_2[1].strip()
-                #print("tmp: " + tmp)
+                # print("tmp: " + tmp)
             prev_keys.append(current_node['name'])
         tokens[current_node['name']] = tmp.strip()
-        #print("Tokens: " + str(tokens))
+        # print("Tokens: " + str(tokens))
         valid_match = True
         for key in [node['name'] for node in struct['nodes']]:
             if key not in tokens.keys():
@@ -238,6 +246,12 @@ def tokenise_text(text):
     return convert_to_natophonetic(tokens["[callsign]"]), convert_to_natophonetic(tokens["[runway]"])
 
 
+session_name = datetime.today().strftime('%Y-%m-%d')
+folders = os.listdir('assets/sessions')
+session_name += f'_{len(folders)}'
+if not os.path.exists(f'assets/sessions/{session_name}'):
+    os.mkdir(f'assets/sessions/{session_name}')
+
 r = sr.Recognizer()
 mic = sr.Microphone()
 
@@ -246,6 +260,9 @@ while not can_continue:
     with mic as source:
         play_file('assets/end sentence beep.mp3')
         audio = r.listen(source)
+        session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+        with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
+            f.write(audio.get_wav_data())
         try:
             text = r.recognize_google(audio)
             print(text)
@@ -266,6 +283,9 @@ while i < len(sequence):
     with mic as source:
         play_file('assets/end sentence beep.mp3')
         audio = r.listen(source)
+        session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+        with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
+            f.write(audio.get_wav_data())
         try:
             text = r.recognize_google(audio)
             if text == "abort":
