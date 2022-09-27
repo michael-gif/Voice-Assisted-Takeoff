@@ -98,10 +98,10 @@ def play_file(file):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         pass
-    session_size = len(os.listdir(f'assets/sessions/{session_name}'))
-    path = os.path.dirname(os.path.abspath(__file__))
-    dest = f'{path}/assets/sessions/{session_name}/{session_size}_{os.path.basename(file)}'
-    shutil.copyfile(file, dest)
+    # session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+    # path = os.path.dirname(os.path.abspath(__file__))
+    # dest = f'{path}/assets/sessions/{session_name}/{session_size}_{os.path.basename(file)}'
+    # shutil.copyfile(file, dest)
 
 
 def play_phrase(phrase):
@@ -214,6 +214,42 @@ sentence_structure = {
 }
 
 
+def recursive_tokenise_text(struct, tokens, current_node, prev_key, remaining, failed):
+    result = contains_phrase(remaining, current_node['possibilities'])
+    if result:
+        failed = 0
+        parts = remaining.split(result)
+        if parts[0] != '':
+            tokens[prev_key] = parts[0].strip()
+        tokens[current_node['name']] = parts[1].strip()
+        remaining = parts[1].strip()
+    else:
+        failed += 1
+    if failed == 2:
+        return
+
+    children = []
+    for conn in struct['connections']:
+        if conn['start_node_id'] == current_node['id']:
+            children.append([node for node in struct['nodes'] if node['id'] == conn['end_node_id']][0])
+    if not children:
+        if not failed:
+            return tokens
+        else:
+            return
+    for child in children:
+        recursive_tokenise_text(struct, tokens, child, current_node['name'], remaining, failed)
+
+
+def process_text(text):
+    for struct in structures:
+        first_node = [node for node in struct['nodes'] if node['id'] == 0][0]
+        tokens = recursive_tokenise_text(struct, {}, first_node, '', text, 0)
+        command = ' '.join(tokens.keys())
+        callsign = convert_to_natophonetic(tokens['[callsign]'])
+        runway = convert_to_natophonetic(tokens['[runway]'])
+
+
 def tokenise_text(text):
     for struct in structures:
         tokens = {}
@@ -246,11 +282,11 @@ def tokenise_text(text):
     return convert_to_natophonetic(tokens["[callsign]"]), convert_to_natophonetic(tokens["[runway]"])
 
 
-session_name = datetime.today().strftime('%Y-%m-%d')
-folders = os.listdir('assets/sessions')
-session_name += f'_{len(folders)}'
-if not os.path.exists(f'assets/sessions/{session_name}'):
-    os.mkdir(f'assets/sessions/{session_name}')
+# session_name = datetime.today().strftime('%Y-%m-%d')
+# folders = os.listdir('assets/sessions')
+# session_name += f'_{len(folders)}'
+# if not os.path.exists(f'assets/sessions/{session_name}'):
+#     os.mkdir(f'assets/sessions/{session_name}')
 
 r = sr.Recognizer()
 mic = sr.Microphone()
@@ -260,9 +296,9 @@ while not can_continue:
     with mic as source:
         play_file('assets/end sentence beep.mp3')
         audio = r.listen(source)
-        session_size = len(os.listdir(f'assets/sessions/{session_name}'))
-        with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
-            f.write(audio.get_wav_data())
+        # session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+        # with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
+        #     f.write(audio.get_wav_data())
         try:
             text = r.recognize_google(audio)
             print(text)
@@ -283,9 +319,9 @@ while i < len(sequence):
     with mic as source:
         play_file('assets/end sentence beep.mp3')
         audio = r.listen(source)
-        session_size = len(os.listdir(f'assets/sessions/{session_name}'))
-        with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
-            f.write(audio.get_wav_data())
+        # session_size = len(os.listdir(f'assets/sessions/{session_name}'))
+        # with open(f'assets/sessions/{session_name}/{session_size}_pilot.wav', 'wb') as f:
+        #     f.write(audio.get_wav_data())
         try:
             text = r.recognize_google(audio)
             if text == "abort":
